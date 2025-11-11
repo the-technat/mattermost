@@ -49,6 +49,7 @@ Docker-Compose file: [./docker-compose.yml](./docker-compose.yml)
 Start using `docker compose up -d`
 
 ### Backup
-TODO: am einfachsten Openstack Swift aber das ist nicht S3 kompatibel und somit dürfte es
-schwierig sein ein Projekt zu finden das Swift kann und gleichzetig einfach und schnell Container volumes/dbs backupen kann
 
+Create an Application Credential in Openstack, grant it member permissions.
+
+Copy the App ID and Secret to your .env file.

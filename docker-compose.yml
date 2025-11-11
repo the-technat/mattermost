@@ -28,7 +28,10 @@ services:
       - /var/run/postgresql
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    environment:
+      - postgres_dumps:/dumps
+    env_file:
+      - .env # from here
+    environment: # these values must come
       - POSTGRES_USER
       - POSTGRES_PASSWORD
       - POSTGRES_DB
@@ -51,18 +54,90 @@ services:
       - mattermost_plugins:/mattermost/plugins:rw
       - mattermost_client_plugins:/mattermost/client/plugins:rw
       - mattermost_bleve_indexes:/mattermost/bleve-indexes:rw
-    environment:
+    env_file:
+      - .env # from here
+    environment: # the references values here must come
       - MM_SERVICESETTINGS_TLSSTRICTTRANSPORT=true
       - MM_LOGSETTINGS_ENABLEFILE=false
       - MM_SQLSETTINGS_DRIVERNAME=postgres
       - MM_SQLSETTINGS_DATASOURCE=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable&connect_timeout=10
       - MM_BLEVESETTINGS_INDEXDIR=/mattermost/bleve-indexes
       - MM_SERVICESETTINGS_SITEURL=https://${DOMAIN}
-
+  backup:
+    image: mazzolino/restic
+    hostname: mattermost_backups # needs to be constant for restic to identify as the same bkp src
+    restart: unless-stopped
+    env_file:
+      - .env # from here
+    environment: # the unspecified values must come
+      RUN_ON_STARTUP: true
+      BACKUP_CRON: "0 3 * * *"
+      RESTIC_BACKUP_SOURCES: /volumes
+      RESTIC_BACKUP_ARGS: >-
+        --tag docker-volumes
+        --verbose
+      RESTIC_FORGET_ARGS: >-
+        --keep-last 10
+        --keep-daily 7
+        --keep-weekly 5
+        --keep-monthly 12
+      PRE_COMMANDS: |-
+        docker compose exec postgres pg_dumpall -U mattermost -f /dumps/mattermost.sql
+        docker compose down
+      POST_COMMANDS: |-
+        docker compose up -d
+      RESTIC_REPOSITORY:
+      RESTIC_PASSWORD:
+      OS_AUTH_URL:
+      OS_APPLICATION_CREDENTIAL_SECRET:
+      OS_APPLICATION_CREDENTIAL_ID:
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - caddy_config:/volumes/caddy_config:ro
+      - caddy_data:/volumes/caddy_data:ro
+      - postgres_dumps:/volumes/postgres_dumps:ro
+      - mattermost_config:/volumes/mattermost_config:ro
+      - mattermost_data:/volumes/mattermost_data:ro
+      - mattermost_plugins:/volumes/mattermost_plugins:ro
+      - mattermost_client_plugins:/volumes/mattermost_client_plugins:ro
+      - mattermost_bleve_indexes:/volumes/mattermost_bleve_indexes:ro
+  prune:
+    image: mazzolino/restic
+    hostname: docker
+    restart: unless-stopped
+    env_file:
+      - .env # from here
+    environment:
+      SKIP_INIT: "true"
+      RUN_ON_STARTUP: "true"
+      PRUNE_CRON: "0 0 4 * * *"
+      RESTIC_REPOSITORY:
+      RESTIC_PASSWORD:
+      OS_AUTH_URL:
+      OS_APPLICATION_CREDENTIAL_SECRET:
+      OS_APPLICATION_CREDENTIAL_ID:
+  check:
+    image: mazzolino/restic
+    hostname: docker
+    restart: unless-stopped
+    env_file:
+      - .env # from here
+    environment:
+      SKIP_INIT: "true"
+      RUN_ON_STARTUP: "false"
+      CHECK_CRON: "0 15 5 * * *"
+      RESTIC_CHECK_ARGS: >-
+        --read-data-subset=10%
+      RESTIC_REPOSITORY:
+      RESTIC_PASSWORD:
+      OS_AUTH_URL:
+      OS_APPLICATION_CREDENTIAL_SECRET:
+      OS_APPLICATION_CREDENTIAL_ID:
 volumes:
   caddy_config:
   caddy_data:
   postgres_data:
+  postgres_dumps:
   mattermost_config:
   mattermost_data:
   mattermost_plugins:
