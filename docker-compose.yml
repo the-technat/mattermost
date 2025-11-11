@@ -1,4 +1,3 @@
-# https://docs.docker.com/compose/environment-variables/
 services:
   caddy:
     image: caddy:2.10
@@ -56,7 +55,7 @@ services:
       - mattermost_bleve_indexes:/mattermost/bleve-indexes:rw
     env_file:
       - .env # from here
-    environment: # the references values here must come
+    environment: # the referenced values below  must come
       - MM_SERVICESETTINGS_TLSSTRICTTRANSPORT=true
       - MM_LOGSETTINGS_ENABLEFILE=false
       - MM_SQLSETTINGS_DRIVERNAME=postgres
@@ -71,7 +70,7 @@ services:
       - .env # from here
     environment: # the unspecified values must come
       RUN_ON_STARTUP: true
-      BACKUP_CRON: "0 3 * * *"
+      BACKUP_CRON: "0 3 * * *" # every night at 3 PM
       RESTIC_BACKUP_SOURCES: /volumes
       RESTIC_BACKUP_ARGS: >-
         --tag docker-volumes
