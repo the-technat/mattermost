@@ -81,10 +81,10 @@ services:
         --keep-weekly 5
         --keep-monthly 12
       PRE_COMMANDS: |-
-        docker compose exec postgres pg_dumpall -U mattermost -f /dumps/mattermost.sql
-        docker compose down
-      POST_COMMANDS: |-
-        docker compose up -d
+        docker exec mattermost-postgres-1 pg_dumpall -U mattermost -f /dumps/mattermost.sql
+        docker stop mattermost-mattermost-1
+      POST_COMMANDS_SUCCESS: |-
+        docker start mattermost-mattermost-1
       RESTIC_REPOSITORY:
       RESTIC_PASSWORD:
       OS_AUTH_URL:
@@ -109,7 +109,7 @@ services:
     environment:
       SKIP_INIT: "true"
       RUN_ON_STARTUP: "true"
-      PRUNE_CRON: "0 0 4 * * *"
+      PRUNE_CRON: "0 4 * * *"
       RESTIC_REPOSITORY:
       RESTIC_PASSWORD:
       OS_AUTH_URL:
@@ -124,7 +124,7 @@ services:
     environment:
       SKIP_INIT: "true"
       RUN_ON_STARTUP: "false"
-      CHECK_CRON: "0 15 5 * * *"
+      CHECK_CRON: "0 5 * * *"
       RESTIC_CHECK_ARGS: >-
         --read-data-subset=10%
       RESTIC_REPOSITORY:
