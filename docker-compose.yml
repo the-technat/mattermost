@@ -1,0 +1,70 @@
+# https://docs.docker.com/compose/environment-variables/
+services:
+  caddy:
+    image: caddy:2.10
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 100
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data/caddy
+      - caddy_config:/config/caddy
+    ports:
+      - 80:80
+      - 443:443
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 100
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+      - POSTGRES_DB
+  mattermost:
+    depends_on:
+      - postgres
+      - caddy
+    image: mattermost/mattermost-enterprise-edition:10.11.5
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 200
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/tmp/
+    volumes:
+      - mattermost_config:/mattermost/config:rw
+      - mattermost_data:/mattermost/data:rw
+      - mattermost_plugins:/mattermost/plugins:rw
+      - mattermost_client_plugins:/mattermost/client/plugins:rw
+      - mattermost_bleve_indexes:/mattermost/bleve-indexes:rw
+    environment:
+      - MM_SERVICESETTINGS_TLSSTRICTTRANSPORT=true
+      - MM_LOGSETTINGS_ENABLEFILE=false
+      - MM_SQLSETTINGS_DRIVERNAME=postgres
+      - MM_SQLSETTINGS_DATASOURCE=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable&connect_timeout=10
+      - MM_BLEVESETTINGS_INDEXDIR=/mattermost/bleve-indexes
+      - MM_SERVICESETTINGS_SITEURL=https://${DOMAIN}
+
+volumes:
+  caddy_config:
+  caddy_data:
+  postgres_data:
+  mattermost_config:
+  mattermost_data:
+  mattermost_plugins:
+  mattermost_client_plugins:
+  mattermost_bleve_indexes:
