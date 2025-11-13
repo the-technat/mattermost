@@ -21,9 +21,3 @@ Mattermost Env Config can be found [here](https://docs.mattermost.com/administra
 Are done automatically to the defined restic repository.
 
 For more backup-docs look at [resticker](https://github.com/djmaze/resticker/tree/master).
-
-## To Do
-
-- Pre & Post Commands of Backup fail because the compose folder & command to execute is not properly escaped
-- The docker volumes should live on a separete disk
-- Cleanup and automate some things
